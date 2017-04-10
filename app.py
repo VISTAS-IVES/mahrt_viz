@@ -2,7 +2,6 @@ from flask import Flask, render_template, send_from_directory, jsonify
 import glob
 import os
 import datetime
-import mercantile # TODO - determine which tile a station lives on and assign tile values
 import math
 
 
