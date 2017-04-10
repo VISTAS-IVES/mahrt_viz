@@ -1,22 +1,83 @@
 
 
 /* Utility functions for tile math */
- function lon2tile(lon, zoom) {
+function lon2tile(lon, zoom) {
     return (Math.floor((lon+180)/360*Math.pow(2,zoom)));
 }
 
- function lat2tile(lat, zoom)  {
+function lat2tile(lat, zoom)  {
     return Math.floor((1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * Math.pow(2,zoom));
 }
 
- function tile2lon(x, z) {
+function tile2lon(x, z) {
     return (x / Math.pow(2, z) * 360 - 180);
- }
+}
 
- function tile2lat(y, z) {
+function tile2lat(y, z) {
     var n = Math.PI - 2 * Math.PI * y / Math.pow(2, z);
     return (180/Math.PI*Math.atan(0.5*(Math.exp(n)-Math.exp(-n))));
- }
+}
+
+// http://stackoverflow.com/questions/343865/how-to-convert-from-utm-to-latlng-in-python-or-javascript
+function utmToLatLng(zone, easting, northing, northernHemisphere){
+
+    if (!northernHemisphere){
+        northing = 10000000 - northing;
+    }
+ 
+    var a = 6378137;
+    var e = 0.081819191;
+    var e1sq = 0.006739497;
+    var k0 = 0.9996;
+ 
+    var arc = northing / k0;
+    var mu = arc / (a * (1 - Math.pow(e, 2) / 4.0 - 3 * Math.pow(e, 4) / 64.0 - 5 * Math.pow(e, 6) / 256.0));
+ 
+    var ei = (1 - Math.pow((1 - e * e), (1 / 2.0))) / (1 + Math.pow((1 - e * e), (1 / 2.0)));
+ 
+    var ca = 3 * ei / 2 - 27 * Math.pow(ei, 3) / 32.0;
+ 
+    var cb = 21 * Math.pow(ei, 2) / 16 - 55 * Math.pow(ei, 4) / 32;
+    var cc = 151 * Math.pow(ei, 3) / 96;
+    var cd = 1097 * Math.pow(ei, 4) / 512;
+    var phi1 = mu + ca * Math.sin(2 * mu) + cb * Math.sin(4 * mu) + cc * Math.sin(6 * mu) + cd * Math.sin(8 * mu);
+ 
+    var n0 = a / Math.pow((1 - Math.pow((e * Math.sin(phi1)), 2)), (1 / 2.0));
+ 
+    var r0 = a * (1 - e * e) / Math.pow((1 - Math.pow((e * Math.sin(phi1)), 2)), (3 / 2.0));
+    var fact1 = n0 * Math.tan(phi1) / r0;
+ 
+    var _a1 = 500000 - easting;
+    var dd0 = _a1 / (n0 * k0);
+    var fact2 = dd0 * dd0 / 2;
+ 
+    var t0 = Math.pow(Math.tan(phi1), 2);
+    var Q0 = e1sq * Math.pow(Math.cos(phi1), 2);
+    var fact3 = (5 + 3 * t0 + 10 * Q0 - 4 * Q0 * Q0 - 9 * e1sq) * Math.pow(dd0, 4) / 24;
+ 
+    var fact4 = (61 + 90 * t0 + 298 * Q0 + 45 * t0 * t0 - 252 * e1sq - 3 * Q0 * Q0) * Math.pow(dd0, 6) / 720;
+ 
+    var lof1 = _a1 / (n0 * k0);
+    var lof2 = (1 + 2 * t0 + Q0) * Math.pow(dd0, 3) / 6.0;
+    var lof3 = (5 - 2 * Q0 + 28 * t0 - 3 * Math.pow(Q0, 2) + 8 * e1sq + 24 * Math.pow(t0, 2)) * Math.pow(dd0, 5) / 120;
+    var _a2 = (lof1 - lof2 + lof3) / Math.cos(phi1);
+    var _a3 = _a2 * 180 / Math.PI;
+ 
+    var latitude = 180 * (phi1 - fact1 * (fact2 + fact3 + fact4)) / Math.PI;
+ 
+    if (!northernHemisphere){
+      latitude = -latitude;
+    }
+ 
+    var longitude = ((zone > 0) && (6 * zone - 183.0) || 3.0) - _a3;
+ 
+    var obj = {
+          latitude : latitude,
+          longitude: longitude
+    };
+ 
+    return obj;
+}
 
 /*
 function metersPerPx(lat, zoom) {
@@ -25,9 +86,12 @@ function metersPerPx(lat, zoom) {
 */
 
 // Initialize the whole scene with a configuration
+
+var scene, tiles, points;
+
 function init(config) {
 
-    var spread = 3;
+    var spread = 1;
     
     var z = config.zoom;
     var xmin = config.left - spread;
@@ -49,7 +113,7 @@ function init(config) {
     var w_height = tile_size * y_tiles;
     
     // scene graph, camera and builtin WebGL renderer
-    var scene = new THREE.Scene();
+    scene = new THREE.Scene();
     var camera = new THREE.PerspectiveCamera( 75, document.body.clientWidth/document.body.clientHeight, 0.1, 2500 );
     
     var renderer = new THREE.WebGLRenderer();
@@ -57,11 +121,30 @@ function init(config) {
     document.body.appendChild(renderer.domElement);
     
     var controls = new THREE.OrbitControls(camera, renderer.domElement)
-    controls.maxDistance = 1900
+    controls.maxDistance = 800
     //controls.minDistance = 100
     controls.maxPolarAngle = Math.PI / 2.1
     
     var loader = new THREE.TextureLoader()
+
+    // groups for housing 3d objects
+    tiles = new THREE.Group();
+    points = new THREE.Group();
+
+    // Lighting
+    var lights = [];
+    lights[ 0 ] = new THREE.PointLight( 0xffffff, 1, 0 );
+    lights[ 1 ] = new THREE.PointLight( 0xffffff, 1, 0 );
+    lights[ 2 ] = new THREE.PointLight( 0xffffff, 1, 0 );
+    
+    lights[ 0 ].position.set( 0, 200, 0 );
+    lights[ 1 ].position.set( 100, 200, 100 );
+    lights[ 2 ].position.set( - 100, - 200, - 100 );
+    
+    scene.add( lights[ 0 ] );
+    scene.add( lights[ 1 ] );
+    scene.add( lights[ 2 ] );
+
     
     function computeHeights(texture) {
     
@@ -130,11 +213,14 @@ function init(config) {
     
                 tile.translateOnAxis(new THREE.Vector3(1, 0, 0), x_offset);
                 tile.translateOnAxis(new THREE.Vector3(0, 0, 1), y_offset);
-                scene.add(tile);
+                //scene.add(tile);
+                tiles.add(tile);
                 num_requests--;
                 if (num_requests == 0) {
+                    scene.add(tiles);
                     console.log('Loaded in ' + String((new Date().getTime() - start) / 1000) + ' seconds');
-                    // TODO - create selectable points at elevation locations
+                    $('#loading_div').hide();
+                    createTilePoints();
                 }
             })
         })
@@ -161,8 +247,92 @@ function init(config) {
     scene.translateOnAxis(new THREE.Vector3(1,0,0), - w_width / 2 + tile_size/2);
     scene.translateOnAxis(new THREE.Vector3(0,0,1), - w_height / 2 + tile_size/2);
     // move the camera
-    camera.position.y = 1000;
+    camera.position.y = 800;
+
+    function createTilePoints() {
+
+        // Same geometry for each mesh
+        var point_geo = new THREE.SphereBufferGeometry(4, 8, 8);
+        var point_material = new THREE.MeshPhongMaterial({
+            color: 0x156289,
+            emissive: 0x072534,
+            side: THREE.DoubleSide,
+            shading: THREE.FlatShading
+        });
+
+        function createOnePoint(tile, data) {
+
+            // Determine if this tile's lat lon are unique.
+            // If not, we push data.id onto the existing tile's userData.id_list to keep track of later.
+            var is_unique = true;
+            if (points.children.length > 0) {
+
+                for (var i = 0; i < points.children.length; i++) {
+                    var tdata = points.children[i].userData;
+                    if (tdata.lat == data.lat && tdata.lon == tdata.lon) {
+                        is_unique = false;
+                        points.children[i].userData.id_list.push(data.id);
+                        break;
+                    }
+                }
+            }
+
+            if (is_unique) {
+
+                // One material for each mesh.
+
+
+                var sx = tile.position.x + tile_size * data.pct_x - tile_size / 2;
+                var sz = tile.position.z - tile_size * data.pct_y + tile_size / 2;
+                var sy = getHeightFromTile(tile, data) + 1;
+
+                var mesh = new THREE.Mesh(point_geo, point_material);
+                mesh.userData = data;
+                mesh.position.x = sx;
+                mesh.position.y = sy;
+                mesh.position.z = sz;
+
+                points.add(mesh);
+            }
+
+        }
+
+        for (var idx = 0; idx < tiles.children.length; idx++) {
+            var tile = tiles.children[idx];
+            var mesh_data = tile.userData;
+            for (var i = 0; i < config.tile_data.length; i++) {
+                var tile_data = config.tile_data[i];
+                if (tile_data.x == mesh_data.x && tile_data.y == mesh_data.y) {
+                    createOnePoint(tile, tile_data);
+                }
+            }
+        }
+        scene.add(points);
+    }
+
+    function onDocumentMouseDown( event ) {    
+        //event.preventDefault();
+        var mouse3D = new THREE.Vector3( ( event.clientX / window.innerWidth ) * 2 - 1,   
+                                    -( event.clientY / window.innerHeight ) * 2 + 1,  
+                                    0.5 );     
+        var raycaster =  new THREE.Raycaster();                                        
+        raycaster.setFromCamera( mouse3D, camera );
+        var intersects = raycaster.intersectObjects( points.children );
+        //console.log(intersects)
+        if ( intersects.length > 0 ) {
+            //intersects[ 0 ].object.material.color.setHex( Math.random() * 0xffffff );
+            //console.log('Hit something!');
+
+            var data = intersects[0].object.userData;
+            console.log(intersects[0]);
+            console.log(data);
+            alertify.message(JSON.stringify(data));
+        }
+    }
+
+    document.addEventListener('mousedown', onDocumentMouseDown);
     
+    // Used to update the tile layer's image texture.
     function updateOneTile(tile) {
         var tile_data = tile.userData;
 
@@ -187,7 +357,7 @@ function init(config) {
         var idx = Math.round(256 * val.pct_x) + 256 * Math.round(256 * val.pct_y);
         return tile.geometry.getAttribute('position').getY(idx);
     }
-    
+
     var render = function () {
         requestAnimationFrame(render)
     	controls.update();
@@ -205,12 +375,17 @@ function init(config) {
     render();
 }
 
+// Retrieve location data and initialize the webgl scene
 var config = {};
-
+var orig_data;
 $.getJSON('/scp/locations').done(function(res) {
-
+    orig_data = res;
     config.variables = res.variables;
     config.num_steps = res.num_steps;
+
+    var utm_zone = 13;
+    var utm_xs = res.Utm_x[0];
+    var utm_ys = res.Utm_y[0];
 
     var lats = res.latitude[0];
     var lons = res.longitude[0];
@@ -228,9 +403,6 @@ $.getJSON('/scp/locations').done(function(res) {
     var width       = Math.abs(left_tile - right_tile) + 1;
     var height      = Math.abs(top_tile - bottom_tile) + 1;
 
-    // total tiles
-    var total_tiles = width * height; // -> eg. 377
-
     config.zoom = zoom;
     config.top = top_tile;
     config.left = left_tile;
@@ -239,13 +411,15 @@ $.getJSON('/scp/locations').done(function(res) {
     config.width = width;
     config.height = height;
 
+    // Setup tile data for point objects
     var tile_data = [];
-
-    // Determine position of each station within a respective tile.
-    // TODO - determine position
     for (var i = 0; i < lats.length; i++) {
-        var lat = lats[i];
-        var lon = lons[i];
+
+        var utm_x = utm_xs[i];  // utm coordinates are more precise than supplied lat/lon coords
+        var utm_y = utm_ys[i];
+        var llobj = utmToLatLng(utm_zone, utm_x, utm_y, true);
+        var lat = llobj.latitude;
+        var lon = llobj.longitude;
 
         // Get station's tile
         var x = lon2tile(lon, zoom);
@@ -268,7 +442,8 @@ $.getJSON('/scp/locations').done(function(res) {
             'lat': lat,
             'lon': lon,
             'pct_x': pct_x,
-            'pct_y': pct_y
+            'pct_y': pct_y,
+            'id_list': [i]   // used if points coincide with one another
         })
 
     }

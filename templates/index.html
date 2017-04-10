@@ -5,9 +5,25 @@
 		<style>
 			body { margin: 0; height: 100vh; overflow-y:hidden; }
 			canvas { width: 100%; height: 100%}
+			#loading_div {
+				position: absolute;
+				left: 50%;
+				top: 50%;
+				z-index: 10;
+				color: white;
+			}
 		</style>
+
+<!-- CSS -->
+<link rel="stylesheet" href="//cdn.jsdelivr.net/alertifyjs/1.9.0/css/alertify.min.css"/>
+<link rel="stylesheet" href="//cdn.jsdelivr.net/alertifyjs/1.9.0/css/themes/default.min.css"/>
+
 	</head>
 	<body>
+	<!-- JavaScript -->
+	<script src="//cdn.jsdelivr.net/alertifyjs/1.9.0/alertify.min.js"></script>
+
+	<div id='loading_div'><h2>Loading scene, please wait...</h2></div>
 		<script type="x-shader/x-vertex" id="vertexShader">
 			varying vec2 vUV;
 			void main() {
