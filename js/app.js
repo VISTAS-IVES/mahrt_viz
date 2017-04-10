@@ -252,7 +252,7 @@ function init(config) {
     function createTilePoints() {
 
         // Same geometry for each mesh
-        var point_geo = new THREE.SphereBufferGeometry(4, 8, 8);
+        var point_geo = new THREE.SphereBufferGeometry(3, 8, 8);
         var point_material = new THREE.MeshPhongMaterial({
             color: 0x156289,
             emissive: 0x072534,
