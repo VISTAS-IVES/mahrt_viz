@@ -1,4 +1,6 @@
 
+
+/* Utility functions for tile math */
  function lon2tile(lon, zoom) {
     return (Math.floor((lon+180)/360*Math.pow(2,zoom)));
 }
@@ -16,11 +18,13 @@
     return (180/Math.PI*Math.atan(0.5*(Math.exp(n)-Math.exp(-n))));
  }
 
+/*
 function metersPerPx(lat, zoom) {
     return 40075016.686 * Math.abs(Math.cos(lat * 180/Math.PI)) / Math.pow(2, zoom+8);
 }
+*/
 
-
+// Initialize the whole scene with a configuration
 function init(config) {
 
     var spread = 3;
@@ -97,47 +101,41 @@ function init(config) {
     function createOneTile(x_idx,y_idx, x_offset, y_offset) {
         var height_tex_url = 'https://s3.amazonaws.com/elevation-tiles-prod/terrarium/' + z + '/' + x_idx + '/' + y_idx + '.png'
         var data_tex_url = 'http://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/' + z + '/' + y_idx + '/' + x_idx
-        var norm_tex_url = 'https://s3.amazonaws.com/elevation-tiles-prod/normal/' + z + '/' + x_idx + '/' + y_idx + '.png'
         loader.load(height_tex_url, function (h_texture) {
             loader.load(data_tex_url, function (d_texture) {
-                //loader.load(norm_tex_url, function (t_texture) {
     
-                    // Declare our base geometry. Using the PlaneBufferGeometry as a helper for specifying vertex positions before altering them.
-                    var geometry = new THREE.PlaneBufferGeometry(tile_size, tile_size, tile_size - 1, tile_size - 1);
+                // Declare our base geometry. Using the PlaneBufferGeometry as a helper for specifying vertex positions before altering them.
+                var geometry = new THREE.PlaneBufferGeometry(tile_size, tile_size, tile_size - 1, tile_size - 1);
     
-                    var heights = computeHeights(h_texture);
-                    var vertices = geometry.getAttribute('position')
-                    for (var i = 0; i < vertices.count; i++) {
-                        vertices.setZ(i, heights[i]);
+                var heights = computeHeights(h_texture);
+                var vertices = geometry.getAttribute('position')
+                for (var i = 0; i < vertices.count; i++) {
+                    vertices.setZ(i, heights[i]);
     
-                    }
-                    vertices.needsUpdate = true;
+                }
+                vertices.needsUpdate = true;
     
-                    // Use GPU decoding in a custom shader.
-                    // Block comment this and unblock above to use CPU decoding.
-                    var material = new THREE.ShaderMaterial(
-                        {
-                            uniforms: {
-                                't_data': {value: d_texture}
-                                //'t_normal': {value: t_texture}
-                            },
-                            vertexShader: document.getElementById('vertexShader').textContent,
-                            fragmentShader: document.getElementById('fragmentShader').textContent
-                        })	// end block comment
+                var material = new THREE.ShaderMaterial(
+                    {
+                        uniforms: {
+                            't_data': {value: d_texture}
+                        },
+                        vertexShader: document.getElementById('vertexShader').textContent,
+                        fragmentShader: document.getElementById('fragmentShader').textContent
+                    })	// end block comment
     
-                    geometry.rotateX(-Math.PI / 2)
-                    var tile = new THREE.Mesh(geometry, material);
-                    tile.userData = {'x': x_idx, 'y': y_idx};
+                geometry.rotateX(-Math.PI / 2)
+                var tile = new THREE.Mesh(geometry, material);
+                tile.userData = {'x': x_idx, 'y': y_idx};
     
-                    tile.translateOnAxis(new THREE.Vector3(1, 0, 0), x_offset);
-                    tile.translateOnAxis(new THREE.Vector3(0, 0, 1), y_offset);
-                    scene.add(tile);
-                    num_requests--;
-                    if (num_requests == 0) {
-                        console.log('Loaded in ' + String((new Date().getTime() - start) / 1000) + ' seconds');
-                        // TODO - create selectable points at elevation locations
-                    }
-                //})
+                tile.translateOnAxis(new THREE.Vector3(1, 0, 0), x_offset);
+                tile.translateOnAxis(new THREE.Vector3(0, 0, 1), y_offset);
+                scene.add(tile);
+                num_requests--;
+                if (num_requests == 0) {
+                    console.log('Loaded in ' + String((new Date().getTime() - start) / 1000) + ' seconds');
+                    // TODO - create selectable points at elevation locations
+                }
             })
         })
     }
@@ -161,12 +159,16 @@ function init(config) {
     
     // move the whole world to center the map
     scene.translateOnAxis(new THREE.Vector3(1,0,0), - w_width / 2 + tile_size/2);
-    scene.translateOnAxis(new THREE.Vector3(0,0,1), - w_height / 3 * 2 + tile_size/2);
+    scene.translateOnAxis(new THREE.Vector3(0,0,1), - w_height / 2 + tile_size/2);
     // move the camera
     camera.position.y = 1000;
     
     function updateOneTile(tile) {
         var tile_data = tile.userData;
+
+        // TODO - do something with this function! =D
+
+        /*
         var tile_url;
         if (current_service.includes('Arc')) {
             tile_url = current_service + z + '/' + tile_data.y + '/' + tile_data.x
@@ -178,6 +180,7 @@ function init(config) {
             tile.material.uniforms.t_data.value = t_data;
             tile.material.needsUpdate = true;
         })
+        */
     }
     
     function getHeightFromTile(tile, val) {
@@ -206,18 +209,16 @@ var config = {};
 
 $.getJSON('/scp/locations').done(function(res) {
 
-
     config.variables = res.variables;
+    config.num_steps = res.num_steps;
 
+    var lats = res.latitude[0];
+    var lons = res.longitude[0];
 
-    config.lats = res.latitude[0];
-    config.lons = res.longitude[0];
-
-
-    var north_edge = Math.max(...config.lats);
-    var south_edge = Math.min(...config.lats);
-    var west_edge = Math.min(...config.lons);
-    var east_edge = Math.max(...config.lons);
+    var north_edge = Math.max(...lats);
+    var south_edge = Math.min(...lats);
+    var west_edge = Math.min( ...lons);
+    var east_edge = Math.max( ...lons);
 
     var zoom        = 15;
     var top_tile    = lat2tile(north_edge, zoom); // eg.lat2tile(34.422, 9);
@@ -238,27 +239,17 @@ $.getJSON('/scp/locations').done(function(res) {
     config.width = width;
     config.height = height;
 
-    //console.log(zoom);
-    //console.log(left_tile);
-    //console.log(bottom_tile);
-    //console.log(right_tile);
-    //console.log(top_tile);
-    //console.log(width, height);
-    //console.log(total_tiles);
-
     var tile_data = [];
 
     // Determine position of each station within a respective tile.
     // TODO - determine position
-    console.log('Zoom = ' + String(zoom));
-    for (var i = 0; i < config.lats.length; i++) {
-        var lat = config.lats[i];
-        var lon = config.lons[i];
+    for (var i = 0; i < lats.length; i++) {
+        var lat = lats[i];
+        var lon = lons[i];
 
         // Get station's tile
         var x = lon2tile(lon, zoom);
         var y = lat2tile(lat, zoom);
-        //console.log(x,y);
 
         // Get tile bbox
         var n = tile2lat(y, zoom);
@@ -269,13 +260,6 @@ $.getJSON('/scp/locations').done(function(res) {
         // Get position in tile
         var pct_x = (lon - w) / (e - w);
         var pct_y = (lat - s) / (n - s);
-
-        console.log(pct_x, pct_y);
-
-
-        //console.log(x, lon, tile2lon(x, zoom));
-        //console.log(y, lat, tile2lat(y, zoom));
-
 
         tile_data.push({
             'id': i,
@@ -288,9 +272,6 @@ $.getJSON('/scp/locations').done(function(res) {
         })
 
     }
-    console.log(tile_data);
     config.tile_data = tile_data;
-
     init(config);
-
-})
+});
