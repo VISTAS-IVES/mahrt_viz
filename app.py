@@ -5,8 +5,10 @@ import datetime
 import mercantile # TODO - determine which tile a station lives on and assign tile values
 import math
 
-NO_DATA = -9999.0
 
+"""
+    Simple Flask app for serving data and frontend assets
+"""
 app = Flask(__name__, static_url_path='')
 
 @app.route('/')
@@ -20,6 +22,11 @@ def send_js(path):
 @app.route('/css/<path:path>')
 def send_css(path):
     return send_from_directory('css', path)
+
+"""
+    Parse and structure scp data as needed
+"""
+NO_DATA = -9999.0
 
 def parse_timestamp(t):
     t = [int(_) for _ in t]
@@ -54,7 +61,6 @@ scp['no_data_value'] = NO_DATA
 _ = scp.pop('relative_Z_Sfc_SCP')   # TODO - what is this variable?
 
 def clean_time_data(data):
-
     for key in data.keys():
         data[key] = [[NO_DATA if math.isnan(x) else x for x in row] for row in data[key]]
     return data
@@ -66,6 +72,9 @@ scp_time_data = clean_time_data({
     'wind direction': scp.pop('wind direction')
 })
 
+"""
+    scp data API
+"""
 @app.route('/scp/locations')
 def send_data():
     return jsonify(scp)
