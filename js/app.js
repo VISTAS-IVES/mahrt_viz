@@ -1,15 +1,17 @@
 // Main app file
 
-// Initialize the whole scene with a configuration
-
+// Global contents to access
 var scene, camera, tiles, points;
+var min_height = 100000; // to move the heights down by a uniform value.
 
-    var min_height = 100000; // to move the heights down by a uniform value.
+var spread = 1;
 
+// tile constants
+var tile_size = 256;
 
+// Initialize the whole scene with a configuration
 function init(config) {
 
-    var spread = 1;
     
     var z = config.zoom;
     var xmin = config.left - spread;
@@ -17,8 +19,6 @@ function init(config) {
     var ymin = config.bottom - spread;
     var ymax = config.top + spread;
 
-    // tile constants
-    var tile_size = 256;
     
     // num tiles, width and height <--> x and y
     // Increase the number of tiles to see more of the area
@@ -305,9 +305,8 @@ function init(config) {
 
 // Retrieve location data and initialize the webgl scene
 var config = {};
-var orig_data;
 $.getJSON('/scp/locations').done(function(res) {
-    orig_data = res;
+
     config.variables = res.variables;
     config.num_steps = res.num_steps;
 
