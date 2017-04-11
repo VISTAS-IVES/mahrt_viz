@@ -83,14 +83,28 @@ function utmToLatLng(zone, easting, northing, northernHemisphere){
     return obj;
 }
 
-/*
 function metersPerPx(lat, zoom) {
     return 40075016.686 * Math.abs(Math.cos(lat * 180/Math.PI)) / Math.pow(2, zoom+8);
 }
-*/
 
-/* More math */
+var R = 6378137;
 
+// Determine lat/lon position 
+function latLonPlusDistance(lat, lon, x, y) {
+
+    var dlat = y/R;
+    var dlon = x/(R*Math.cos(Math.PI * lat/180.0));
+
+    return {
+        'latitude': lat + dlat * 180 / Math.PI,
+        'longitude': lon + dlon * 180 / Math.PI
+    }
+
+
+}
+
+
+/* Vector math */
 // Calculate uv direction given angle, in degrees
 function calcUVDirection(degrees) {
     var radians = (degrees / 180) * Math.PI;

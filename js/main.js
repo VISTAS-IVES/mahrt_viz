@@ -1,4 +1,4 @@
-// Main app file
+// main.js
 
 // Global contents to access
 var scene, camera, tiles, points, vectors;
@@ -88,12 +88,9 @@ function init(config) {
         var idx;
         for (var y = 0; y < h; ++y) {
             for (var x = 0; x < w; ++x) {
-                // Access the data one row at a time, top to bottom, left to right
-                idx = (x + y * w) * 4;
-        
-                // Mapzen & s3.aws elevation tiles are decoded as such below
+                idx = (x + y * w) * 4;        
                 // (red * 256 + green + blue / 256) - 32768
-                heights[x + y * w] = ((data[idx] * 256) +  data[idx+1] + (data[idx+2] / 256) - 32768);  // divide by 255.0 to bring it down to proper scaling in buffer.
+                heights[x + y * w] = ((data[idx] * 256) +  data[idx+1] + (data[idx+2] / 256) - 32768);
             }
         }
     
@@ -180,44 +177,21 @@ function init(config) {
 
         // Same geometry for each mesh
         var point_geo = new THREE.SphereBufferGeometry(3, 8, 8);
-        var point_material = new THREE.MeshPhongMaterial({
-            color: 0x156289,
-            emissive: 0x072534,
-            side: THREE.DoubleSide,
-            shading: THREE.FlatShading
-        });
+        var point_material = new THREE.MeshLambertMaterial({color: 0x156289});
 
         function createOnePoint(tile, data) {
 
-            // Determine if this tile's lat lon are unique.
-            // If not, we push data.id onto the existing tile's userData.id_list to keep track of later.
-            var is_unique = true;
-            if (points.children.length > 0) {
+            var sx = tile.position.x + tile_size * data.pct_x - tile_size / 2;
+            var sz = tile.position.z + tile_size * data.pct_y - tile_size / 2;
+            var sy = getHeightFromTile(tile, data) - min_height;
 
-                for (var i = 0; i < points.children.length; i++) {
-                    var tdata = points.children[i].userData;
-                    if (tdata.lat == data.lat && tdata.lon == data.lon) {
-                        is_unique = false;
-                        points.children[i].userData.id_list.push(data.id);
-                        break;
-                    }
-                }
-            }
+            var mesh = new THREE.Mesh(point_geo, point_material);
+            mesh.userData = data;
+            mesh.position.x = sx;
+            mesh.position.y = sy;
+            mesh.position.z = sz;
 
-            if (is_unique) {
-
-                var sx = tile.position.x + tile_size * data.pct_x - tile_size / 2;
-                var sz = tile.position.z + tile_size * data.pct_y - tile_size / 2;
-                var sy = getHeightFromTile(tile, data) - min_height;
-
-                var mesh = new THREE.Mesh(point_geo, point_material);
-                mesh.userData = data;
-                mesh.position.x = sx;
-                mesh.position.y = sy;
-                mesh.position.z = sz;
-
-                points.add(mesh);
-            }
+            points.add(mesh);
 
         }
 
@@ -299,7 +273,7 @@ function init(config) {
 
             // If wind_degrees are azimuth, then convert to polar
             var polar_degrees = (180 - wind_degrees).mod(360);
-            var uv = calcUVDirection(polar_degrees);
+            var uv = calcUVDirection((180 - polar_degrees).mod(360));
             
             // If they are polar, then just use this.
             //var uv = calcUVDirection(wind_degrees);
@@ -392,15 +366,29 @@ $.getJSON('/scp/locations').done(function(res) {
     var utm_xs = res.Utm_x[0];
     var utm_ys = res.Utm_y[0];
 
+    var xdisps = res.x_network[0];
+    var ydisps = res.y_network[0];
+
+    var center_lat = res.latitude[0][20];
+    var center_lon = res.longitude[0][20];
+
+    console.log(center_lat, center_lon);
+
     var lats = [];
     var lons = [];
 
     // utm coordinates are more precise than supplied lat/lon coords,
     // so convert UTM to lat/lon and overwrite supplied values
     for (var i = 0; i < utm_xs.length; i++) {
-        var ll = utmToLatLng(utm_zone, utm_xs[i], utm_ys[i], true);
+        //var ll = utmToLatLng(utm_zone, utm_xs[i], utm_ys[i], true);
+        //lats.push(ll.latitude);
+        //lons.push(ll.longitude);
+
+        var ll = latLonPlusDistance(center_lat, center_lon, xdisps[i], ydisps[i]);
+        console.log(ll);
         lats.push(ll.latitude);
         lons.push(ll.longitude);
+
     }
 
     // Determine world tiles
@@ -458,8 +446,7 @@ $.getJSON('/scp/locations').done(function(res) {
             'lat': lat,
             'lon': lon,
             'pct_x': pct_x,
-            'pct_y': pct_y,
-            'id_list': [i]   // used if points coincide with one another
+            'pct_y': pct_y
         })
 
     }
