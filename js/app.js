@@ -5,7 +5,7 @@ var scene, camera, tiles, points, vectors;
 var min_height = 100000; // to move the heights down by a uniform value.
 
 var spread = 1;
-
+var NO_DATA = -9999.0
 // tile constants
 var tile_size = 256;
 
@@ -39,8 +39,8 @@ function init(config) {
     document.body.appendChild(renderer.domElement);
     
     var controls = new THREE.OrbitControls(camera, renderer.domElement)
-    //controls.maxDistance = 800
-    //controls.minDistance = 100
+    controls.maxDistance = 800
+    controls.minDistance = 10
     controls.maxPolarAngle = Math.PI / 2.1
     
     var loader = new THREE.TextureLoader()
@@ -175,6 +175,7 @@ function init(config) {
     // move the camera
     camera.position.y = 800;
 
+    // Create stations
     function createTilePoints() {
 
         // Same geometry for each mesh
@@ -233,6 +234,7 @@ function init(config) {
         scene.add(points);
     }
 
+    // Create playback timeline
     function initTimeline() {
         var tstart = new Date().getTime();
         config.timeline_initialized = false;
@@ -258,33 +260,54 @@ function init(config) {
         });
     }
 
+    // Create direction vectors
     function initVectors() {
 
         for (var i = 0; i < points.children.length; i++) {
-
-            //var point = points.children[i];
             var origin = points.children[i].position.clone();
             origin.y  += 3;
 
             var direction = new THREE.Vector3(1,0,1);
             var vector = new THREE.ArrowHelper(direction, origin, 10, 0xffff00);
+
+            // Copy id from point into this vector.
+            vector.userData = {'id': points.children[i].userData.id}
             vectors.add(vector);
         }
 
         scene.add(vectors);        
-
         config.vectors_initialized = true;
     }
 
+    // Update vector direction based on time index
     function updateVectors(t_idx) {
-        // TODO - update arrows with direction
-        console.log(t_idx);
-
         if (!config.vectors_initialized) {
             initVectors();
         }
 
+        var wind_directions = config.time_data['wind direction'][t_idx];
+        for (var i = 0; i < vectors.children.length; i++) {
 
+            var vector = vectors.children[i];
+            var id = vector.userData.id;
+
+            var wind_degrees = wind_directions[id];
+            if (wind_degrees == NO_DATA) {
+                vector.visible = false;
+                continue;
+            }
+
+            // If wind_degrees are azimuth, then convert to polar
+            var polar_degrees = (180 - wind_degrees).mod(360);
+            var uv = calcUVDirection(polar_degrees);
+            
+            // If they are polar, then just use this.
+            //var uv = calcUVDirection(wind_degrees);
+
+            var direction = new THREE.Vector3(uv.u, 0, uv.v);
+            direction.normalize();
+            vector.setDirection(direction);
+        }
     }
 
     function onDocumentMouseDown( event ) {    
@@ -300,7 +323,7 @@ function init(config) {
         if ( intersects.length > 0 ) {
             //intersects[ 0 ].object.material.color.setHex( Math.random() * 0xffffff );
             var data = intersects[0].object.userData;
-            var message = 'x: ' + String(data.x) + ', y: ' + String(data.y) + ' ';
+            var message = 'ID: ' + String(data.id) + 'x: ' + String(data.x) + ', y: ' + String(data.y) + ' ';
             message += 'pct_x: ' + String(data.pct_x) + ', pct_y: ' + String(data.pct_y);
             alertify.message(message);
         }

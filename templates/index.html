@@ -12,10 +12,17 @@
 				z-index: 10;
 				color: white;
 			}
-			#time_slider {
+			#player {
 				position: absolute;
+				width: 1000px;
 				left: 100px;
 				top: 90vh;
+				z-index: 10;
+			}
+			#time_slider {
+				/*position: absolute;
+				left: 100px;
+				top: 90vh;*/
 				width: 800px;
 				z-index: 10;
 			}
@@ -33,7 +40,12 @@
 
 
 	<div id='loading_div'><h2>Loading scene, please wait...</h2></div>
-	<div id='time_slider'></div>
+	<div id='player'>
+		<div id='time_slider'></div>
+		<button id='forward' type='button'>Forward</button>
+		<button id='backward' type='button'>Backward</button>
+		<button id='reset' type='button'>Reset</button>
+	</div>
 	<script type="x-shader/x-vertex" id="vertexShader">
 		varying vec2 vUV;
 		void main() {

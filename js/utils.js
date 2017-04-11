@@ -1,3 +1,9 @@
+
+// Modulo polyfill
+Number.prototype.mod = function(n) {
+    return ((this%n)+n)%n;
+};
+
 /* Utility functions for tile math */
 function lon2tile(lon, zoom) {
     return (Math.floor((lon+180)/360*Math.pow(2,zoom)));
@@ -83,3 +89,14 @@ function metersPerPx(lat, zoom) {
 }
 */
 
+/* More math */
+
+// Calculate uv direction given angle, in degrees
+function calcUVDirection(degrees) {
+    var radians = (degrees / 180) * Math.PI;
+    return {
+        'u': Math.cos(radians),
+        'v': Math.sin(radians)
+    }
+
+}
