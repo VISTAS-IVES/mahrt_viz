@@ -1,7 +1,7 @@
 // Main app file
 
 // Global contents to access
-var scene, camera, tiles, points;
+var scene, camera, tiles, points, vectors;
 var min_height = 100000; // to move the heights down by a uniform value.
 
 var spread = 1;
@@ -48,6 +48,7 @@ function init(config) {
     // groups for housing 3d objects
     tiles = new THREE.Group();
     points = new THREE.Group();
+    vectors = new THREE.Group();
 
     // Lighting
     var lights = [];
@@ -69,37 +70,36 @@ function init(config) {
     
     function computeHeights(texture) {
     
-    	// Access Image object from THREE.Texture
-    	var image = texture.image
-    	var w = image.naturalWidth
-    	var h = image.naturalHeight
+        // Access Image object from THREE.Texture
+        var image = texture.image
+        var w = image.naturalWidth
+        var h = image.naturalHeight
     
-    	// Instantiate a canvas and extract the data from within
-    	var canvas = document.createElement('canvas')
-    	canvas.width = w
-    	canvas.height = h
-    	var ctx = canvas.getContext('2d')
-    	ctx.drawImage(image, 0, 0, w, h)
-    	var data = ctx.getImageData(0, 0, w, h).data
+        // Instantiate a canvas and extract the data from within
+        var canvas = document.createElement('canvas')
+        canvas.width = w
+        canvas.height = h
+        var ctx = canvas.getContext('2d')
+        ctx.drawImage(image, 0, 0, w, h)
+        var data = ctx.getImageData(0, 0, w, h).data
     
-    	// Allocate space for the height information
-    	var heights = new Float32Array(w * h)
-    	var idx;
-    	for (var y = 0; y < h; ++y) {
-    		for (var x = 0; x < w; ++x) {
+        // Allocate space for the height information
+        var heights = new Float32Array(w * h)
+        var idx;
+        for (var y = 0; y < h; ++y) {
+            for (var x = 0; x < w; ++x) {
+                // Access the data one row at a time, top to bottom, left to right
+                idx = (x + y * w) * 4;
+        
+                // Mapzen & s3.aws elevation tiles are decoded as such below
+                // (red * 256 + green + blue / 256) - 32768
+                heights[x + y * w] = ((data[idx] * 256) +  data[idx+1] + (data[idx+2] / 256) - 32768);  // divide by 255.0 to bring it down to proper scaling in buffer.
+            }
+        }
     
-    			// Access the data one row at a time, top to bottom, left to right
-    			idx = (x + y * w) * 4;
-    
-    			// Mapzen & s3.aws elevation tiles are decoded as such below
-    			// (red * 256 + green + blue / 256) - 32768
-    			heights[x + y * w] = ((data[idx] * 256) +  data[idx+1] + (data[idx+2] / 256) - 32768);  // divide by 255.0 to bring it down to proper scaling in buffer.
-    		}
-    	}
-    
-    	// Free the resources and return
-    	data = ctx = canvas = null
-    	return heights
+        // Free the resources and return
+        data = ctx = canvas = null
+        return heights
     }
     
     function createOneTile(x_idx,y_idx, x_offset, y_offset) {
@@ -129,7 +129,7 @@ function init(config) {
                         },
                         vertexShader: document.getElementById('vertexShader').textContent,
                         fragmentShader: document.getElementById('fragmentShader').textContent
-                    })	// end block comment
+                    })    // end block comment
     
                 geometry.rotateX(-Math.PI / 2)
                 var tile = new THREE.Mesh(geometry, material);
@@ -146,6 +146,7 @@ function init(config) {
                     console.log('Loaded in ' + String((new Date().getTime() - start) / 1000) + ' seconds');
                     $('#loading_div').hide();
                     createTilePoints();
+                    initTimeline();
                 }
             })
         })
@@ -159,13 +160,13 @@ function init(config) {
     
     // add tiles in succession
     for (var x = xmin; x <= xmax; x++) {
-    	local_y_offset = 0;
-    	for (var y = ymin; y <= ymax; y++) {
-    		num_requests++;
-    		createOneTile(x, y, local_x_offset, local_y_offset);
+        local_y_offset = 0;
+        for (var y = ymin; y <= ymax; y++) {
+        num_requests++;
+        createOneTile(x, y, local_x_offset, local_y_offset);
             local_y_offset += tile_size;
-    	}
-    	local_x_offset += tile_size;
+        }
+        local_x_offset += tile_size;
     }
     
     // move the whole world to center the map
@@ -232,6 +233,60 @@ function init(config) {
         scene.add(points);
     }
 
+    function initTimeline() {
+        var tstart = new Date().getTime();
+        config.timeline_initialized = false;
+        config.vectors_initialized = false;
+        $.getJSON('/scp/all').done(function(res) {
+            config.time_data = res;
+            config.timeline_initialized = true;
+            updateVectors(0);
+            console.log("Got data in " + String((new Date().getTime() - tstart)/1000) + " seconds");
+        });
+        $(function() {
+            $( "#time_slider" ).slider({
+                value:0,
+                min: 0,
+                max: config.num_steps-1,
+                step: 1,
+                slide: function( event, ui ) {
+                    if (config.timeline_initialized) {
+                        updateVectors(ui.value);
+                    }                   
+                }
+            });
+        });
+    }
+
+    function initVectors() {
+
+        for (var i = 0; i < points.children.length; i++) {
+
+            //var point = points.children[i];
+            var origin = points.children[i].position.clone();
+            origin.y  += 3;
+
+            var direction = new THREE.Vector3(1,0,1);
+            var vector = new THREE.ArrowHelper(direction, origin, 10, 0xffff00);
+            vectors.add(vector);
+        }
+
+        scene.add(vectors);        
+
+        config.vectors_initialized = true;
+    }
+
+    function updateVectors(t_idx) {
+        // TODO - update arrows with direction
+        console.log(t_idx);
+
+        if (!config.vectors_initialized) {
+            initVectors();
+        }
+
+
+    }
+
     function onDocumentMouseDown( event ) {    
         //event.preventDefault();
         var mouse3D = new THREE.Vector3( ( event.clientX / window.innerWidth ) * 2 - 1,   
@@ -253,7 +308,7 @@ function init(config) {
         if (tile_intersects.length > 0) {
             //console.log(tile_intersects[0]);
             //console.log(tile_intersects[0].object);
-            console.log(tile_intersects[0].object.userData);
+            //console.log(tile_intersects[0].object.userData);
 
         }
     }
@@ -288,15 +343,15 @@ function init(config) {
 
     var render = function () {
         requestAnimationFrame(render)
-    	controls.update();
-    	renderer.render(scene, camera);
+        controls.update();
+        renderer.render(scene, camera);
     };
     
     function resize() {
-    	renderer.setSize(document.body.clientWidth, document.body.clientHeight);
-    	camera.aspect = document.body.clientWidth / document.body.clientHeight;
-    	camera.updateProjectionMatrix();
-    	render();
+        renderer.setSize(document.body.clientWidth, document.body.clientHeight);
+        camera.aspect = document.body.clientWidth / document.body.clientHeight;
+        camera.updateProjectionMatrix();
+        render();
     }
     
     window.addEventListener('resize', resize, false);

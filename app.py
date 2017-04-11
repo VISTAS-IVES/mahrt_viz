@@ -78,8 +78,18 @@ def send_data():
 def send_timestamp(time_idx):
     return jsonify({
             'time stamp': timestamps[time_idx],
-            'T_network_SCP':  scp_time_data['theta_network_SCP'][time_idx],
+            'theta_network_SCP':  scp_time_data['theta_network_SCP'][time_idx],
             'u_network_SCP':  scp_time_data['u_network_SCP'][time_idx],
             'v_network_SCP':  scp_time_data['v_network_SCP'][time_idx],
             'wind direction': scp_time_data['wind direction'][time_idx]
+        })
+
+@app.route('/scp/all')
+def send_all_time():
+    return jsonify({
+            'time stamp': timestamps,
+            'theta_network_SCP':  scp_time_data['theta_network_SCP'],
+            'u_network_SCP':  scp_time_data['u_network_SCP'],
+            'v_network_SCP':  scp_time_data['v_network_SCP'],
+            'wind direction': scp_time_data['wind direction']
         })

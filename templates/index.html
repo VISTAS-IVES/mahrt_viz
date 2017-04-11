@@ -12,7 +12,17 @@
 				z-index: 10;
 				color: white;
 			}
+			#time_slider {
+				position: absolute;
+				left: 100px;
+				top: 90vh;
+				width: 800px;
+				z-index: 10;
+			}
 		</style>
+
+		<!-- jQuery UI -->
+		<link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
 
 		<!-- Alertify css -->
 		<link rel="stylesheet" href="//cdn.jsdelivr.net/alertifyjs/1.9.0/css/alertify.min.css"/>
@@ -21,33 +31,37 @@
 	</head>
 	<body>
 
+
 	<div id='loading_div'><h2>Loading scene, please wait...</h2></div>
-		<script type="x-shader/x-vertex" id="vertexShader">
-			varying vec2 vUV;
-			void main() {
-				vUV = uv;
-				gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-			}
-		</script>
-		<script type="x-shader/x-fragment" id="fragmentShader">
-			uniform sampler2D t_data;
-			varying vec2 vUV;
-			void main() {
-				vec4 texColor = texture2D(t_data, vUV);
-				gl_FragColor = texColor;
-			}
-		</script>
+	<div id='time_slider'></div>
+	<script type="x-shader/x-vertex" id="vertexShader">
+		varying vec2 vUV;
+		void main() {
+			vUV = uv;
+			gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+		}
+	</script>
+	<script type="x-shader/x-fragment" id="fragmentShader">
+		uniform sampler2D t_data;
+		varying vec2 vUV;
+		void main() {
+			vec4 texColor = texture2D(t_data, vUV);
+			gl_FragColor = texColor;
+		}
+	</script>
 
-		<!-- Misc assets -->
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
-		<script src="//cdn.jsdelivr.net/alertifyjs/1.9.0/alertify.min.js"></script>
+	<!-- Misc assets -->
+   	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+	<script src="//cdn.jsdelivr.net/alertifyjs/1.9.0/alertify.min.js"></script>
+	<script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
 
-        <!-- Three.js assets -->
-		<script src="js/three.js"></script>
-		<script src="js/OrbitControls.js"></script>
 
-		<!-- Main app assets  -->
-		<script src="js/utils.js"></script>
-		<script src="js/app.js"></script>
+ 	<!-- Three.js assets -->
+	<script src="js/three.js"></script>
+	<script src="js/OrbitControls.js"></script>
+
+	<!-- Main app assets  -->
+	<script src="js/utils.js"></script>
+	<script src="js/app.js"></script>
 	</body>
 </html>
