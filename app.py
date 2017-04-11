@@ -4,6 +4,7 @@ import os
 import datetime
 import math
 
+DIRECTORY_PATTERN = 'scp_case_study/*'
 
 """
     Simple Flask app for serving data and frontend assets
@@ -29,15 +30,12 @@ NO_DATA = -9999.0
 
 def parse_timestamp(t):
     t = [int(_) for _ in t]
-    if t[2]:                                                        # TODO - get answer from Larry about date formatting
-        return datetime.datetime(t[0],t[1],t[2],t[3],t[4],t[5])
-    else:
-        return datetime.datetime(t[0],t[1],t[2]+1,t[3],t[4],t[5])   # TODO - remove line when ^ is answered
+    return datetime.datetime(t[0],t[1],t[2],t[3],t[4],t[5])
 
 def parse_scp():
     print('Parsing scp files...')
     data = {}
-    for path in glob.glob('scp_data/*'):
+    for path in glob.glob(DIRECTORY_PATTERN):
         varname = path.split(os.sep)[-1]
         print('{}...'.format(varname))
         with open(path, 'r') as f:
@@ -57,15 +55,13 @@ scp['num_steps'] = len(timestamps)
 scp['variables'] = varnames
 scp['no_data_value'] = NO_DATA
 
-_ = scp.pop('relative_Z_Sfc_SCP')   # TODO - what is this variable?
-
 def clean_time_data(data):
     for key in data.keys():
         data[key] = [[NO_DATA if math.isnan(x) else x for x in row] for row in data[key]]
     return data
 
 scp_time_data = clean_time_data({
-    'T_network_SCP': scp.pop('T_network_SCP'),
+    'theta_network_SCP': scp.pop('theta_network_SCP'),
     'u_network_SCP': scp.pop('u_network_SCP'),
     'v_network_SCP': scp.pop('v_network_SCP'),
     'wind direction': scp.pop('wind direction')
@@ -82,7 +78,7 @@ def send_data():
 def send_timestamp(time_idx):
     return jsonify({
             'time stamp': timestamps[time_idx],
-            'T_network_SCP':  scp_time_data['T_network_SCP'][time_idx],
+            'T_network_SCP':  scp_time_data['theta_network_SCP'][time_idx],
             'u_network_SCP':  scp_time_data['u_network_SCP'][time_idx],
             'v_network_SCP':  scp_time_data['v_network_SCP'][time_idx],
             'wind direction': scp_time_data['wind direction'][time_idx]
