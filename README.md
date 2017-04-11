@@ -7,8 +7,16 @@ Inside a fresh virtualenv, run `pip install -r requirements.txt`.
 # Usage
 To start the server:
 ```
+# Activate your virtual environment
+path\to\virtualenv\scripts\activate
+
+# Change directory to where you unpacked the repo
 cd path\to\mahrt_viz
-export FLASK_APP=app.py
+
+# Set temporary environment variable for Flask
+export FLASK_APP=app.py   # On Windows, use 'set' instead of 'export'
+
+# Run the server
 python -m flask run
 ```
 
