@@ -22,6 +22,21 @@
 			#time_slider {
 				width: 800px;
 			}
+			#legend {
+				position: absolute;
+				right: 100px;
+				top: 90vh;
+				width: 200px;
+				background-color: grey;
+			}
+			#time {
+				position: absolute;
+				top: 10vh;
+				left: 100px;
+				width: 250px;
+				z-index: 10;
+				color: white;
+			}
 		</style>
 
 		<!-- jQuery UI -->
@@ -33,6 +48,7 @@
 	</head>
 	<body>
 		<div id='loading_div'><h2>Loading scene, please wait...</h2></div>
+		<div id='time'></div>
 		<div id='player'>
 			<div id='time_slider'></div>
 			<button id='forward' type='button'>Forward</button>
@@ -42,6 +58,9 @@
 			<label style='color: white;'>Playback Speed</label>
 			<input type="number" id="speed" value="1" min="0" max="10">
 		</div>
+		<!--div id='legend'>
+			Here I am!
+		</div-->
 
 		<!-- Misc assets -->
 	   	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>

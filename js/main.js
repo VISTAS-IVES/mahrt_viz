@@ -100,7 +100,6 @@ function init(config) {
 
                 // Create mesh and add to scene
                 var material = new THREE.MeshBasicMaterial({map: d_texture});
-                //var material = new THREE.MeshPhongMaterial({color: 'grey'});
                 var tile = new THREE.Mesh(geometry, material);
                 tile.translateOnAxis(new THREE.Vector3(1, 0, 0), x_offset);
                 tile.translateOnAxis(new THREE.Vector3(0, 0, 1), y_offset);
@@ -246,6 +245,7 @@ function init(config) {
 
             updateVectors(value);
             updateTilePoints(value);
+            updateLabel(value);
         }
 
         var tstart = new Date().getTime();
@@ -257,8 +257,7 @@ function init(config) {
             config.timeline_initialized = true;
 
             initTheta();
-            updateVectors(0);
-            updateTilePoints(0);
+            update(0);
             console.log("Got data in " + String((new Date().getTime() - tstart)/1000) + " seconds");
         });
         $(function() {
@@ -385,13 +384,10 @@ function init(config) {
         var point_intersects = raycaster.intersectObjects( points.children );
         var tile_intersects = raycaster.intersectObjects( tiles.children );
         if ( point_intersects.length > 0 ) {
-
             // TODO - add a callback for when a point is intersected
-
             //intersects[ 0 ].object.material.color.setHex( Math.random() * 0xffffff );
             var data = point_intersects[0].object.userData;
-            var message = 'ID: ' + String(data.id) + 'x: ' + String(data.x) + ', y: ' + String(data.y) + ' ';
-            message += 'pct_x: ' + String(data.pct_x) + ', pct_y: ' + String(data.pct_y);
+            var message = 'Clicked on station ' + String(data.id + 1);
             alertify.message(message);
         }
 
@@ -424,6 +420,10 @@ function init(config) {
         */
     }
     
+    function updateLabel(t_idx) {
+        $('#time').text(config.time_data['time stamp'][t_idx]);
+    }
+
     function getHeightFromTile(tile, val) {
         var idx = Math.round(tile_size * val.pct_x) + tile_size * Math.round(tile_size * val.pct_y);
         return tile.geometry.getAttribute('position').getY(idx);
