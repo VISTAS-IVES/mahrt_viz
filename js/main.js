@@ -39,7 +39,7 @@ function init(config) {
     document.body.appendChild(renderer.domElement);
     
     var controls = new THREE.OrbitControls(camera, renderer.domElement)
-    controls.maxDistance = 800
+    controls.maxDistance = 80000
     controls.minDistance = 10
     controls.maxPolarAngle = Math.PI / 2.1
     
@@ -86,11 +86,12 @@ function init(config) {
         // Allocate space for the height information
         var heights = new Float32Array(w * h)
         var idx;
-        for (var y = 0; y < h; ++y) {
-            for (var x = 0; x < w; ++x) {
+        for (var y = 0; y < h; y++) {
+            for (var x = 0; x < w; x++) {
                 idx = (x + y * w) * 4;        
                 // (red * 256 + green + blue / 256) - 32768
-                heights[x + y * w] = ((data[idx] * 256) +  data[idx+1] + (data[idx+2] / 256) - 32768);
+                //heights[x + y * w] = ((data[idx] * 256) +  data[idx+1] + (data[idx+2] / 256) - 32768);
+                heights[x + y * w] = -10000 + ((data[idx] * 256 * 256 + data[idx+1] * 256 + data[idx+2]) * 0.1);
             }
         }
     
@@ -99,9 +100,14 @@ function init(config) {
         return heights
     }
     
+    var token = 'pk.eyJ1IjoidGF5bG9ybXV0Y2giLCJhIjoiY2oxZWdtOHFhMDAwdzJ4cDM3cTF6YzdkOSJ9.V6tb7qDkG0MezhEYWwlsGQ';
+
     function createOneTile(x_idx,y_idx, x_offset, y_offset) {
-        var height_tex_url = 'https://s3.amazonaws.com/elevation-tiles-prod/terrarium/' + z + '/' + x_idx + '/' + y_idx + '.png'
+        //var height_tex_url = 'https://s3.amazonaws.com/elevation-tiles-prod/terrarium/' + z + '/' + x_idx + '/' + y_idx + '.png'
+        var height_tex_url = 'https://api.mapbox.com/v4/mapbox.terrain-rgb/' + z + '/' + x_idx + '/' + y_idx + '.pngraw?access_token=' + token
         var data_tex_url = 'http://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/' + z + '/' + y_idx + '/' + x_idx
+        //var data_tex_url = 'http://d.tile.stamen.com/terrain/' + z + '/' + x_idx + '/' + y_idx + '.png';
+        //var data_tex_url = 'http://a.tile.stamen.com/terrain/12/652/1580.png'
         loader.load(height_tex_url, function (h_texture) {
             loader.load(data_tex_url, function (d_texture) {
     
