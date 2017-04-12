@@ -105,36 +105,31 @@ function init(config) {
         loader.load(height_tex_url, function (h_texture) {
             loader.load(data_tex_url, function (d_texture) {
     
-                // Declare our base geometry. Using the PlaneBufferGeometry as a helper for specifying vertex positions before altering them.
+                // Tile geometry
                 var geometry = new THREE.PlaneBufferGeometry(tile_size, tile_size, tile_size - 1, tile_size - 1);
-    
+
+                // Compute heights and update global minimum
                 var heights = computeHeights(h_texture);
                 var h_min = Math.min(...heights);
                 min_height = (h_min < min_height) ? h_min : min_height;
+
+                // Set heights for this tile
                 var vertices = geometry.getAttribute('position')
                 for (var i = 0; i < vertices.count; i++) {
                     vertices.setZ(i, heights[i]);
-    
                 }
-                vertices.needsUpdate = true;
-    
-                var material = new THREE.ShaderMaterial(
-                    {
-                        uniforms: {
-                            't_data': {value: d_texture}
-                        },
-                        vertexShader: document.getElementById('vertexShader').textContent,
-                        fragmentShader: document.getElementById('fragmentShader').textContent
-                    })
-    
+                vertices.needsUpdate = true;  
                 geometry.rotateX(-Math.PI / 2)
+
+                // Create mesh and add to scene
+                var material = new THREE.MeshBasicMaterial({map: d_texture});
                 var tile = new THREE.Mesh(geometry, material);
-                tile.userData = {'x': x_idx, 'y': y_idx};
-    
                 tile.translateOnAxis(new THREE.Vector3(1, 0, 0), x_offset);
                 tile.translateOnAxis(new THREE.Vector3(0, 0, 1), y_offset);
-                //scene.add(tile);
+                tile.userData = {'x': x_idx, 'y': y_idx};
                 tiles.add(tile);
+
+                // Check if setup is complete
                 num_requests--;
                 if (num_requests == 0) {
                     scene.add(tiles);
