@@ -121,12 +121,11 @@ function init(config) {
                 var material = new THREE.ShaderMaterial(
                     {
                         uniforms: {
-                            't_data': {value: d_texture},
-                            'min_height': {value: min_height}
+                            't_data': {value: d_texture}
                         },
                         vertexShader: document.getElementById('vertexShader').textContent,
                         fragmentShader: document.getElementById('fragmentShader').textContent
-                    })    // end block comment
+                    })
     
                 geometry.rotateX(-Math.PI / 2)
                 var tile = new THREE.Mesh(geometry, material);
@@ -169,6 +168,7 @@ function init(config) {
     // move the whole world to center the map
     scene.translateOnAxis(new THREE.Vector3(1,0,0), - w_width / 2 + tile_size/2);
     scene.translateOnAxis(new THREE.Vector3(0,0,1), - w_height / 2 + tile_size/2);
+    
     // move the camera
     camera.position.y = 800;
 
