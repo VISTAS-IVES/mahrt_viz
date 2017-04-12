@@ -249,6 +249,7 @@ function init(config) {
         }
 
         var tstart = new Date().getTime();
+        config.reverse_vectors = false;
         config.timeline_initialized = false;
         config.vectors_initialized = false;
         $.getJSON('/scp/all').done(function(res) {
@@ -330,6 +331,21 @@ function init(config) {
             } else {
                 stop();
             }
+        });
+
+        $('#tofrom').on('change', function() {
+            config.reverse_vectors = $(this).prop('checked');
+            update($('#time_slider').slider("option", "value"));
+            var message;
+            if (config.reverse_vectors) {
+                message = 'Vectors now indicate direction wind is coming from!';
+            } else {
+                message = 'Vectors now indicate direction wind is flowing to!';
+            }
+            alertify.delay(0)
+            .closeLogOnClick(true)
+            .maxLogItems(1)
+            .log(message);
         })
     }
 
@@ -370,7 +386,7 @@ function init(config) {
                 continue;
             }
 
-            var polar_degrees = (wind_degrees - 450).mod(360);  // convert to polar degrees from compass direction
+            var polar_degrees = (wind_degrees - 450 - (config.reverse_vectors ? 180 : 0)).mod(360);  // convert to polar degrees from compass direction
             var uv = calcUVDirection(polar_degrees);
             var direction = new THREE.Vector3(uv.u, 0, uv.v);
             direction.normalize();
