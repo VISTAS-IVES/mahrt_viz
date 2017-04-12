@@ -288,7 +288,7 @@ THREE.OrbitControls = function ( object, domElement ) {
 
 	}
 
-	var panLeft = function() {
+	/*var panLeft = function() {
 
 		var v = new THREE.Vector3();
 
@@ -316,8 +316,7 @@ THREE.OrbitControls = function ( object, domElement ) {
 
 		};
 
-	}();
-	/*
+	}();*/
 
 		var panLeft = function() {
 
@@ -354,7 +353,6 @@ var panUp = function() {
     };
 
 }();
-*/
 
 	// deltaX and deltaY are in pixels; right and down are positive
 	var pan = function() {
