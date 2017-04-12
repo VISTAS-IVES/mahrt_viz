@@ -271,13 +271,8 @@ function init(config) {
                 continue;
             }
 
-            // If wind_degrees are azimuth, then convert to polar
-            var polar_degrees = (180 - wind_degrees).mod(360);
-            var uv = calcUVDirection((180 - polar_degrees).mod(360));
-            
-            // If they are polar, then just use this.
-            //var uv = calcUVDirection(wind_degrees);
-
+            var polar_degrees = (wind_degrees - 450).mod(360);  // convert to polar degrees from compass direction
+            var uv = calcUVDirection(polar_degrees);
             var direction = new THREE.Vector3(uv.u, 0, uv.v);
             direction.normalize();
             vector.setDirection(direction);
@@ -285,7 +280,7 @@ function init(config) {
     }
 
     function onDocumentMouseDown( event ) {    
-        //event.preventDefault();
+        event.preventDefault();
         var mouse3D = new THREE.Vector3( ( event.clientX / window.innerWidth ) * 2 - 1,   
                                     -( event.clientY / window.innerHeight ) * 2 + 1,  
                                     0.5 );     
@@ -293,7 +288,6 @@ function init(config) {
         raycaster.setFromCamera( mouse3D, camera );
         var intersects = raycaster.intersectObjects( points.children );
         var tile_intersects = raycaster.intersectObjects( tiles.children );
-        //console.log(intersects)
         if ( intersects.length > 0 ) {
             //intersects[ 0 ].object.material.color.setHex( Math.random() * 0xffffff );
             var data = intersects[0].object.userData;
@@ -316,7 +310,7 @@ function init(config) {
     function updateOneTile(tile) {
         var tile_data = tile.userData;
 
-        // TODO - do something with this function! =D
+        // TODO - create callback?
 
         /*
         var tile_url;
@@ -369,23 +363,25 @@ $.getJSON('/scp/locations').done(function(res) {
     var xdisps = res.x_network[0];
     var ydisps = res.y_network[0];
 
+    // The lat/lon of the center tower for all the stations
     var center_lat = res.latitude[0][20];
     var center_lon = res.longitude[0][20];
 
-    console.log(center_lat, center_lon);
+    var center_utmx = res.Utm_x[0][20];
+    var center_utmy = res.Utm_y[0][20];
+
+    var center_ll = utmToLatLng(utm_zone, center_utmx, center_utmy, true);
+    var center_lat = center_ll.latitude;
+    var center_lon = center_ll.longitude;
+
 
     var lats = [];
     var lons = [];
 
-    // utm coordinates are more precise than supplied lat/lon coords,
-    // so convert UTM to lat/lon and overwrite supplied values
     for (var i = 0; i < utm_xs.length; i++) {
-        //var ll = utmToLatLng(utm_zone, utm_xs[i], utm_ys[i], true);
-        //lats.push(ll.latitude);
-        //lons.push(ll.longitude);
 
+        // use distance from center tower
         var ll = latLonPlusDistance(center_lat, center_lon, xdisps[i], ydisps[i]);
-        console.log(ll);
         lats.push(ll.latitude);
         lons.push(ll.longitude);
 
