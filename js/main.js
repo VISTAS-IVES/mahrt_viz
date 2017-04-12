@@ -232,6 +232,23 @@ function init(config) {
                 }
             });
         });
+
+        $('#forward').on('click', function() {
+            var value = $('#time_slider').slider("option", "value") + 1;
+            updateVectors(value);
+        })
+
+        $('#backward').on('click', function() {
+            var value = $('#time_slider').slider("option", "value") - 1;
+            updateVectors(value);
+        })
+
+        $('#reset').on('click', function() {
+            updateVectors(0);
+        })
+
+
+
     }
 
     // Create direction vectors
@@ -258,6 +275,12 @@ function init(config) {
         if (!config.vectors_initialized) {
             initVectors();
         }
+
+        if (t_idx < 0 || t_idx > config.num_steps - 1) {
+            return;
+        }
+
+        $('#time_slider').slider('value',t_idx);
 
         var wind_directions = config.time_data['wind direction'][t_idx];
         for (var i = 0; i < vectors.children.length; i++) {
