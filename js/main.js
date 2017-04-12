@@ -258,6 +258,10 @@ function init(config) {
 
             initTheta();
             update(0);
+            alertify.logPosition("top right")
+                .delay(0)
+                .closeLogOnClick(true)
+                .log("Click on each station to see values at the current time stamp.");
             console.log("Got data in " + String((new Date().getTime() - tstart)/1000) + " seconds");
         });
         $(function() {
@@ -375,7 +379,6 @@ function init(config) {
     }
 
     function onDocumentMouseDown( event ) {    
-        //event.preventDefault();
         var mouse3D = new THREE.Vector3( ( event.clientX / window.innerWidth ) * 2 - 1,   
                                     -( event.clientY / window.innerHeight ) * 2 + 1,  
                                     0.5 );     
@@ -383,12 +386,19 @@ function init(config) {
         raycaster.setFromCamera( mouse3D, camera );
         var point_intersects = raycaster.intersectObjects( points.children );
         var tile_intersects = raycaster.intersectObjects( tiles.children );
+
         if ( point_intersects.length > 0 ) {
             // TODO - add a callback for when a point is intersected
             //intersects[ 0 ].object.material.color.setHex( Math.random() * 0xffffff );
             var data = point_intersects[0].object.userData;
-            var message = 'Clicked on station ' + String(data.id + 1);
-            alertify.message(message);
+            var t_idx = $('#time_slider').slider('option','value');
+            alertify.logPosition("top right")
+                .delay(0)
+                .maxLogItems(3)
+                .closeLogOnClick(true)
+                .log('Station ' + String(data.id + 1))
+                .log('Theta = ' + String(theta_array(t_idx)[data.id]) + ' deg. C')
+                .log('Wind direction = ' + String(config.time_data['wind direction'][t_idx][data.id]))
         }
 
         if (tile_intersects.length > 0) {
@@ -397,7 +407,7 @@ function init(config) {
         }
     }
 
-    document.addEventListener('mousedown', onDocumentMouseDown);
+    document.addEventListener('mousedown', onDocumentMouseDown, false);
     
     // Used to update the tile layer's image texture.
     function updateOneTile(tile) {
@@ -450,6 +460,7 @@ function init(config) {
 var config = {};
 $.getJSON('/scp/locations').done(function(res) {
 
+    config._orig_res = res;
     config.variables = res.variables;
     config.num_steps = res.num_steps;
 
