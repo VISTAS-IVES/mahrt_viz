@@ -338,9 +338,9 @@ function init(config) {
             update($('#time_slider').slider("option", "value"));
             var message;
             if (config.reverse_vectors) {
-                message = 'Vectors now indicate direction wind is coming from!';
-            } else {
                 message = 'Vectors now indicate direction wind is flowing to!';
+            } else {
+                message = 'Vectors now indicate direction wind is coming from!';
             }
             alertify.delay(0)
             .closeLogOnClick(true)
