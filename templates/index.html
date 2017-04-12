@@ -9,7 +9,7 @@
 				position: absolute;
 				left: 50%;
 				top: 50%;
-				z-index: 10;
+				z-index: 8;
 				color: white;
 			}
 			#player {
@@ -20,11 +20,7 @@
 				z-index: 10;
 			}
 			#time_slider {
-				/*position: absolute;
-				left: 100px;
-				top: 90vh;*/
 				width: 800px;
-				z-index: 10;
 			}
 		</style>
 
@@ -42,6 +38,9 @@
 			<button id='forward' type='button'>Forward</button>
 			<button id='backward' type='button'>Backward</button>
 			<button id='reset' type='button'>Reset</button>
+			<button id='animate' type='button'>Start Playback</button>
+			<label style='color: white;'>Playback Speed</label>
+			<input type="number" id="speed" value="1" min="0" max="10">
 		</div>
 
 		<!-- Misc assets -->

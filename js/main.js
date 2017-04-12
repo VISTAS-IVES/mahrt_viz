@@ -1,16 +1,14 @@
 // main.js
 
-// Global contents to access
-var scene, camera, tiles, points, vectors;
-var min_height = 100000; // to move the heights down by a uniform value.
-
-var spread = 1;
-var NO_DATA = -9999.0
-// tile constants
-var tile_size = 256;
-
 // Initialize the whole scene with a configuration
 function init(config) {
+
+    var scene, camera, tiles, points, vectors;
+    var min_height = 100000; // to move the heights down by a uniform value.
+    var spread = 1;
+    var NO_DATA = -9999.0
+    // tile constants
+    var tile_size = 256;
 
     
     var z = config.zoom;
@@ -18,13 +16,10 @@ function init(config) {
     var xmax = config.right + spread;
     var ymin = config.bottom - spread;
     var ymax = config.top + spread;
-
     
     // num tiles, width and height <--> x and y
-    // Increase the number of tiles to see more of the area
     var x_tiles = xmax - xmin + 1;
     var y_tiles = ymax - ymin + 1;
-    
     
     // world sizes
     var w_width = tile_size * x_tiles;
@@ -49,24 +44,6 @@ function init(config) {
     tiles = new THREE.Group();
     points = new THREE.Group();
     vectors = new THREE.Group();
-
-    // Lighting
-    var lights = [];
-    lights[ 0 ] = new THREE.PointLight( 0xffffff, 1, 0 );
-    lights[ 1 ] = new THREE.PointLight( 0xffffff, 1, 0 );
-    lights[ 2 ] = new THREE.PointLight( 0xffffff, 1, 0 );
-    lights[ 3 ] = new THREE.PointLight( 0xffffff, 1, 0 );
-    
-    lights[ 0 ].position.set( 0, 200, 0 );
-    lights[ 1 ].position.set( 100, 200, 100 );
-    lights[ 2 ].position.set( - 100, - 200, - 100 );
-    lights[ 3 ].position.set( 0, -200, 0 );
-    
-    scene.add( lights[ 0 ] );
-    scene.add( lights[ 1 ] );
-    scene.add( lights[ 2 ] );
-    scene.add( lights[ 3 ] );
-
     
     function computeHeights(texture) {
     
@@ -123,6 +100,7 @@ function init(config) {
 
                 // Create mesh and add to scene
                 var material = new THREE.MeshBasicMaterial({map: d_texture});
+                //var material = new THREE.MeshPhongMaterial({color: 'grey'});
                 var tile = new THREE.Mesh(geometry, material);
                 tile.translateOnAxis(new THREE.Vector3(1, 0, 0), x_offset);
                 tile.translateOnAxis(new THREE.Vector3(0, 0, 1), y_offset);
@@ -136,6 +114,7 @@ function init(config) {
                     tiles.translateOnAxis(new THREE.Vector3(0,1,0), -min_height);
                     console.log('Loaded in ' + String((new Date().getTime() - start) / 1000) + ' seconds');
                     $('#loading_div').hide();
+                    createLights();
                     createTilePoints();
                     initTimeline();
                 }
@@ -167,14 +146,19 @@ function init(config) {
     // move the camera
     camera.position.y = 800;
 
+    function createLights() {
+        light = new THREE.HemisphereLight();
+        scene.add(light);
+    }
+
     // Create stations
     function createTilePoints() {
 
         // Same geometry for each mesh
         var point_geo = new THREE.SphereBufferGeometry(3, 8, 8);
-        var point_material = new THREE.MeshLambertMaterial({color: 0x156289});
 
         function createOnePoint(tile, data) {
+            var point_material = new THREE.MeshLambertMaterial({color: 0x156289});
 
             var sx = tile.position.x + tile_size * data.pct_x - tile_size / 2;
             var sz = tile.position.z + tile_size * data.pct_y - tile_size / 2;
@@ -203,15 +187,78 @@ function init(config) {
         scene.add(points);
     }
 
+    var red = new THREE.Color(1,0,0);
+    var blue = new THREE.Color(0,0,1);
+
+    theta_array = function(t_idx) { return config.time_data.theta_network_SCP[t_idx] };
+
+    function initTheta() {
+        // init the color range
+        for (var i = 0; i < config.num_steps - 1; i++) {
+            var array = theta_array(i);
+
+            // Don't use NO_DATA
+            array = array.filter(v => v != NO_DATA);
+
+            var min = Math.min(...array);
+            var max = Math.max(...array);
+            theta_global_min = (min < theta_global_min) ? min : theta_global_min;
+            theta_global_max = (max > theta_global_max) ? max : theta_global_max;
+        }
+    }
+
+    // Determine overall temperature min and max;
+    var theta_global_min = 100, theta_global_max = -100;
+
+    function updateTilePoints(t_idx) {
+        // TODO - use a callback
+        var array = theta_array(t_idx);
+        for (var i = 0; i < points.children.length; i++) {
+
+            var point_mat = points.children[i].material;
+            var id = points.children[i].userData.id;
+            var theta = array[id];
+
+            if (theta == NO_DATA) {
+                points.children[i].visible = false;
+                vectors.children[i].visible = false;
+                continue;
+            }
+
+            var r = (theta - theta_global_min) / (theta_global_max - theta_global_min); 
+            var b = 1 - r;
+
+            var color = new THREE.Color(r, 0, b);
+            point_mat.color = color;
+        }
+    }
+
     // Create playback timeline
     function initTimeline() {
+
+        function update(value) {
+
+            if (value < 0 || value > config.num_steps - 1) {
+                return;
+            }
+
+            $('#time_slider').slider('value',value);
+
+            updateVectors(value);
+            updateTilePoints(value);
+        }
+
         var tstart = new Date().getTime();
         config.timeline_initialized = false;
         config.vectors_initialized = false;
         $.getJSON('/scp/all').done(function(res) {
+
             config.time_data = res;
             config.timeline_initialized = true;
+
+            initTheta();
             updateVectors(0);
+            updateTilePoints(0);
             console.log("Got data in " + String((new Date().getTime() - tstart)/1000) + " seconds");
         });
         $(function() {
@@ -222,28 +269,65 @@ function init(config) {
                 step: 1,
                 slide: function( event, ui ) {
                     if (config.timeline_initialized) {
-                        updateVectors(ui.value);
+                        update(ui.value);
                     }                   
                 }
             });
         });
 
+        var animateHandle;
+
+        var stop = function() {
+            $('#animate').text('Start Playback');
+            clearInterval(animateHandle);
+        }
+
+        var speed = function() {
+            var value = 1/$('#speed').val();    // set input
+            return value * 1000;
+        }
+
+        var is_animating = function() { return $('#animate').text() != 'Start Playback'; }
+
+        var animate = function() {
+             $('#animate').text('Stop Playback');
+             animateHandle = setInterval(function() {
+                 var value = $('#time_slider').slider('option', 'value') + 1;
+                 update(value);
+                 if (value >= config.num_steps) {
+                     clearInterval(animateHandle);
+                 }
+             }, speed());
+        }
+
+        $('#speed').on('change', function() {
+            if (is_animating()) {
+                stop();     // Stop so that animate can inherit new speed
+                animate();
+            }
+        });
+
+
         $('#forward').on('click', function() {
-            var value = $('#time_slider').slider("option", "value") + 1;
-            updateVectors(value);
-        })
+            update($('#time_slider').slider("option", "value") + 1);
+        });
 
         $('#backward').on('click', function() {
-            var value = $('#time_slider').slider("option", "value") - 1;
-            updateVectors(value);
-        })
+            update($('#time_slider').slider("option", "value") - 1);
+        });
 
         $('#reset').on('click', function() {
-            updateVectors(0);
+            stop();
+            update(0);
+        });
+
+        $('#animate').on('click', function() {
+            if (!is_animating()) {
+                animate();
+            } else {
+                stop();
+            }
         })
-
-
-
     }
 
     // Create direction vectors
@@ -271,12 +355,6 @@ function init(config) {
             initVectors();
         }
 
-        if (t_idx < 0 || t_idx > config.num_steps - 1) {
-            return;
-        }
-
-        $('#time_slider').slider('value',t_idx);
-
         var wind_directions = config.time_data['wind direction'][t_idx];
         for (var i = 0; i < vectors.children.length; i++) {
 
@@ -298,26 +376,27 @@ function init(config) {
     }
 
     function onDocumentMouseDown( event ) {    
-        event.preventDefault();
+        //event.preventDefault();
         var mouse3D = new THREE.Vector3( ( event.clientX / window.innerWidth ) * 2 - 1,   
                                     -( event.clientY / window.innerHeight ) * 2 + 1,  
                                     0.5 );     
         var raycaster =  new THREE.Raycaster();                                        
         raycaster.setFromCamera( mouse3D, camera );
-        var intersects = raycaster.intersectObjects( points.children );
+        var point_intersects = raycaster.intersectObjects( points.children );
         var tile_intersects = raycaster.intersectObjects( tiles.children );
-        if ( intersects.length > 0 ) {
+        if ( point_intersects.length > 0 ) {
+
+            // TODO - add a callback for when a point is intersected
+
             //intersects[ 0 ].object.material.color.setHex( Math.random() * 0xffffff );
-            var data = intersects[0].object.userData;
+            var data = point_intersects[0].object.userData;
             var message = 'ID: ' + String(data.id) + 'x: ' + String(data.x) + ', y: ' + String(data.y) + ' ';
             message += 'pct_x: ' + String(data.pct_x) + ', pct_y: ' + String(data.pct_y);
             alertify.message(message);
         }
 
         if (tile_intersects.length > 0) {
-            //console.log(tile_intersects[0]);
-            //console.log(tile_intersects[0].object);
-            //console.log(tile_intersects[0].object.userData);
+            // TODO - add callback for when a tile is intersected
 
         }
     }
