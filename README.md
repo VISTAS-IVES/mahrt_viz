@@ -1,5 +1,5 @@
 # mahrt_viz
-A WebGL viewer for wind data as a time series. This is a very simple Flask app that serves the CSV data stored in the scp_data folder.
+A WebGL viewer for wind data as a time series. This is a very simple Flask app that serves the CSV data stored in the scp_case_study folder.
 
 # Installation
 Inside a fresh virtualenv, run `pip install -r requirements.txt`.
