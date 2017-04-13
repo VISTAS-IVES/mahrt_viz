@@ -337,7 +337,7 @@ function init(config) {
             config.reverse_vectors = $(this).prop('checked');
             update($('#time_slider').slider("option", "value"));
             var message;
-            if (config.reverse_vectors) {
+            if (!config.reverse_vectors) {
                 message = 'Vectors now indicate direction wind is flowing to!';
             } else {
                 message = 'Vectors now indicate direction wind is coming from!';
@@ -386,7 +386,7 @@ function init(config) {
                 continue;
             }
 
-            var polar_degrees = (wind_degrees - 450 - (config.reverse_vectors ? 180 : 0)).mod(360);  // convert to polar degrees from compass direction
+            var polar_degrees = (wind_degrees - 450 - (!config.reverse_vectors ? 180 : 0)).mod(360);  // convert to polar degrees from compass direction
             var uv = calcUVDirection(polar_degrees);
             var direction = new THREE.Vector3(uv.u, 0, uv.v);
             direction.normalize();
