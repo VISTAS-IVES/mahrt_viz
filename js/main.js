@@ -196,19 +196,11 @@ function init(config) {
         scene.add(points);
     }
 
-    var red = new THREE.Color(1,0,0);
-    var blue = new THREE.Color(0,0,1);
-
     theta_array = function(t_idx) { return config.time_data.theta_network_SCP[t_idx] };
 
     function initTheta() {
-        // init the color range
         for (var i = 0; i < config.num_steps - 1; i++) {
-            var array = theta_array(i);
-
-            // Don't use NO_DATA
-            array = array.filter(v => v != NO_DATA);
-
+            var array = theta_array(i).filter(v => v != NO_DATA);   // Don't use NO_DATA
             var min = Math.min(...array);
             var max = Math.max(...array);
             theta_global_min = (min < theta_global_min) ? min : theta_global_min;
@@ -222,6 +214,10 @@ function init(config) {
     function updateTilePoints(t_idx) {
         // TODO - use a callback
         var array = theta_array(t_idx);
+
+        var relative_min = Math.min(...(array.filter(v => v != NO_DATA)));
+        var relative_max = Math.max(...(array.filter(v => v != NO_DATA)));
+
         for (var i = 0; i < points.children.length; i++) {
 
             var point_mat = points.children[i].material;
@@ -234,7 +230,14 @@ function init(config) {
                 continue;
             }
 
-            var r = (theta - theta_global_min) / (theta_global_max - theta_global_min); 
+            var r;
+            if (config.relative_temperature) {
+                r = (theta - relative_min) / (relative_max - relative_min);
+                $('#red_value').text(String(relative_max));
+                $('#blue_value').text(String(relative_min));
+            } else {
+                r = (theta - theta_global_min) / (theta_global_max - theta_global_min); 
+            }
             var b = 1 - r;
 
             var color = new THREE.Color(r, 0, b);
@@ -259,6 +262,7 @@ function init(config) {
         }
 
         var tstart = new Date().getTime();
+        config.relative_temperature = false;
         config.reverse_vectors = false;
         config.timeline_initialized = false;
         config.vectors_initialized = false;
@@ -269,6 +273,9 @@ function init(config) {
 
             initTheta();
             update(0);
+            $('#red_value').text(String(theta_global_max));
+            $('#blue_value').text(String(theta_global_min));
+
             alertify.logPosition("top right")
                 .delay(0)
                 .closeLogOnClick(true)
@@ -364,6 +371,23 @@ function init(config) {
                 tiles.children[i].material.uniforms.show_contours.needsUpdate = true;
             }
         });
+
+        $('#temperature').on('change', function() {
+            config.relative_temperature = $(this).prop('checked');
+            update($('#time_slider').slider("option", "value"));
+            var message;
+            if (config.relative_temperature) {
+                message = 'Temperature now using scale relative to current timestamp!';
+            } else {
+                message = 'Temperature now using scale relative to full dataset!';
+                $('#red_value').text(String(theta_global_max));
+                $('#blue_value').text(String(theta_global_min));
+            }
+            alertify.delay(0)
+            .closeLogOnClick(true)
+            .maxLogItems(1)
+            .log(message);
+        })
     }
 
     // Create direction vectors
