@@ -26,7 +26,7 @@
 				margin: 10px;
 				padding: 10px;
 				background-color: grey;
-				width: 620px;
+				width: 730px;
 			}
 			#legend {
 				position: absolute;
@@ -43,6 +43,9 @@
 				z-index: 10;
 				color: white;
 				font-size: x-large;
+			}
+			.number_input {
+				width: 40px;
 			}
 		</style>
 
@@ -64,18 +67,42 @@
 				<button id='reset' type='button'>Reset</button>
 				<button id='animate' type='button'>Start Playback</button>
 				<label>Playback Speed</label>
-				<input type="number" id="speed" value="10" min="0" max="100">
+				<input class='number_input' type="number" id="speed" value="10" min="0" max="100">
 				<label>Reverse Vectors</label>
 				<input type="checkbox" id="tofrom">
+				<label>Show Contours</label>
+				<input type="checkbox" id="contours">
 			</div>
 		</div>
 
 		<!-- Misc assets -->
 	   	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
 		<script src="https://cdn.rawgit.com/alertifyjs/alertify.js/v1.0.10/dist/js/alertify.js"></script>
-
 		<script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
 
+		<!-- Terrain shaders -->
+		<script type="x-shader/x-vertex" id="vertexShader">
+			varying vec2 vUV;
+			varying float elevation;
+			void main() {
+				vUV = uv;
+				gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+				elevation = position.y;
+			}
+		</script>
+		<script type="x-shader/x-fragment" id="fragmentShader">
+			uniform sampler2D t_data;
+			varying vec2 vUV;
+			varying float elevation;
+			uniform bool show_contours;
+			void main() {
+				vec4 texColor = texture2D(t_data, vUV);
+				if (show_contours && floor(mod(elevation,5.)) == 0.) {
+                	texColor = vec4(0.1);
+            	}
+            	gl_FragColor = texColor;
+			}
+		</script>
 
 	 	<!-- Three.js assets -->
 		<script src="js/three.js"></script>

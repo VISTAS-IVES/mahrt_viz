@@ -99,7 +99,17 @@ function init(config) {
                 geometry.rotateX(-Math.PI / 2)
 
                 // Create mesh and add to scene
-                var material = new THREE.MeshBasicMaterial({map: d_texture});
+                var material = new THREE.ShaderMaterial(
+                    {
+                        uniforms: {
+                            't_data': {value: d_texture},
+                            'show_contours': {value: false},
+                            'elev_factor': {value: 1.0}
+                        },
+                        vertexShader: document.getElementById('vertexShader').textContent,
+                        fragmentShader: document.getElementById('fragmentShader').textContent
+                    });
+
                 var tile = new THREE.Mesh(geometry, material);
                 tile.translateOnAxis(new THREE.Vector3(1, 0, 0), x_offset);
                 tile.translateOnAxis(new THREE.Vector3(0, 0, 1), y_offset);
@@ -346,7 +356,14 @@ function init(config) {
             .closeLogOnClick(true)
             .maxLogItems(1)
             .log(message);
-        })
+        });
+
+        $('#contours').on('change', function() {
+            for (var i = 0; i < tiles.children.length; i++) {
+                tiles.children[i].material.uniforms.show_contours.value = $(this).prop('checked');
+                tiles.children[i].material.uniforms.show_contours.needsUpdate = true;
+            }
+        });
     }
 
     // Create direction vectors
