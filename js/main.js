@@ -538,13 +538,9 @@ $.getJSON('/scp/locations').done(function(res) {
     var xdisps = res.x_network[0];
     var ydisps = res.y_network[0];
 
-    // The lat/lon of the center tower for all the stations
-    var center_lat = res.latitude[0][20];
-    var center_lon = res.longitude[0][20];
-
+    // Compute lat/lon of the center tower for all the stations
     var center_utmx = res.Utm_x[0][20];
     var center_utmy = res.Utm_y[0][20];
-
     var center_ll = utmToLatLng(utm_zone, center_utmx, center_utmy, true);
     var center_lat = center_ll.latitude;
     var center_lon = center_ll.longitude;
