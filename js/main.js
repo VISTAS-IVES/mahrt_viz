@@ -259,6 +259,7 @@ function init(config) {
             updateVectors(value);
             updateTilePoints(value);
             updateLabel(value);
+            updateLog(value);
         }
 
         var tstart = new Date().getTime();
@@ -448,6 +449,7 @@ function init(config) {
             // TODO - add a callback for when a point is intersected
             //intersects[ 0 ].object.material.color.setHex( Math.random() * 0xffffff );
             var data = point_intersects[0].object.userData;
+            config.current_station = data.id;
             var t_idx = $('#time_slider').slider('option','value');
             alertify.logPosition("top right")
                 .delay(0)
@@ -489,6 +491,14 @@ function init(config) {
     
     function updateLabel(t_idx) {
         $('#time').text(config.time_data['time stamp'][t_idx]);
+    }
+
+    function updateLog(t_idx) {
+        var logs = $('.default.show');
+        if (config.current_station !== undefined && $('.default.show').length == 3) {
+            $(logs[1]).text('Theta = ' + String(theta_array(t_idx)[config.current_station]) + ' deg. C');
+            $(logs[2]).text('Wind direction = ' + String(config.time_data['wind direction'][t_idx][config.current_station]));
+        }
     }
 
     function getHeightFromTile(tile, val) {
