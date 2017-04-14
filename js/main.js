@@ -545,6 +545,8 @@ $.getJSON('/scp/locations').done(function(res) {
     var center_lat = center_ll.latitude;
     var center_lon = center_ll.longitude;
 
+    // Init Leaflet minimap
+    initMap(center_lat, center_lon);
 
     var lats = [];
     var lons = [];

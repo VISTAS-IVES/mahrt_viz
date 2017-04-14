@@ -1,136 +1,149 @@
 <!DOCTYPE html>
 <html>
-	<head>
-		<title>Larry Mahrt Viz</title>
-		<style>
-			body { margin: 0; height: 100vh; overflow-y:hidden; }
-			canvas { width: 100%; height: 100%}
-			#loading_div {
-				position: absolute;
-				left: 50%;
-				top: 50%;
-				z-index: 8;
-				color: white;
-			}
-			#player {
-				position: absolute;
-				width: 800px;
-				left: 100px;
-				bottom: 30px;
-				z-index: 10;
-			}
-			#time_slider {
-				width: 800px;
-			}
-			#playback_options {
-				margin: 10px;
-				padding: 10px;
-				background-color: grey;
-				width: 730px;
-			}
-			#time {
-				position: absolute;
-				top: 5vh;
-				left: 100px;
-				width: 350px;
-				z-index: 10;
-				color: white;
-				font-size: x-large;
-			}
-			.number_input {
-				width: 40px;
-			}
-			#legend {
-				position: absolute;
-				left: 100px;
-				top: 10vh;
-				width: 200px;
-				padding: 5px;
-				background-color: grey;
-			}
-			.legend div {
-			    width:16px;
-			    border:1px solid #808080;
-			    display:inline-block;
-			}
-			.legend_text {
-				margin-right: 42px;
-			}
-			.red { background-color:red; }
-			.blue { background-color:blue; }
-		</style>
+    <head>
+        <title>Larry Mahrt Viz</title>
+        <style>
+            body { margin: 0; height: 100vh; overflow-y:hidden; }
+            canvas { width: 100%; height: 100%}
+            #loading_div {
+                position: absolute;
+                left: 50%;
+                top: 50%;
+                z-index: 8;
+                color: white;
+            }
+            #player {
+                position: absolute;
+                width: 800px;
+                right: 100px;
+                bottom: 30px;
+                z-index: 10;
+            }
+            #time_slider {
+                width: 800px;
+            }
+            #playback_options {
+                margin: 10px;
+                padding: 10px;
+                background-color: grey;
+                width: 730px;
+            }
+            #time {
+                position: absolute;
+                top: 5vh;
+                left: 100px;
+                width: 350px;
+                z-index: 10;
+                color: white;
+                font-size: x-large;
+            }
+            .number_input {
+                width: 40px;
+            }
+            #legend {
+                position: absolute;
+                left: 100px;
+                top: 10vh;
+                width: 200px;
+                padding: 5px;
+                background-color: grey;
+            }
+            .legend div {
+                width:16px;
+                border:1px solid #808080;
+                display:inline-block;
+            }
+            .legend_text {
+                margin-right: 42px;
+            }
+            .red { background-color:red; }
+            .blue { background-color:blue; }
+            #map {
+                position: absolute;
+                left: 50px;
+                bottom: 50px;
+                height: 250px;
+                width: 250px;
+            }
+        </style>
 
-		<!-- jQuery UI -->
-		<link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+        <!-- Leaflet -->
+        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.0.3/dist/leaflet.css" />
+        <script src="https://unpkg.com/leaflet@1.0.3/dist/leaflet.js"></script>
 
-		<!-- Alertify css -->
-		<link rel="stylesheet" href="//cdn.jsdelivr.net/alertifyjs/1.9.0/css/alertify.min.css"/>
-		<link rel="stylesheet" href="//cdn.jsdelivr.net/alertifyjs/1.9.0/css/themes/default.min.css"/>
-	</head>
-	<body>
-		<div id='loading_div'><h2>Loading scene, please wait...</h2></div>
-		<div id='time'></div>
-		<div id='player'>
-			<div id='time_slider'></div>
-			<div id='playback_options'>
-				<button id='forward' type='button'>Forward</button>
-				<button id='backward' type='button'>Backward</button>
-				<button id='reset' type='button'>Reset</button>
-				<button id='animate' type='button'>Start Playback</button>
-				<label>Playback Speed</label>
-				<input class='number_input' type="number" id="speed" value="10" min="0" max="100">
-				<label>Reverse Vectors</label>
-				<input type="checkbox" id="tofrom">
-				<label>Show Contours</label>
-				<input type="checkbox" id="contours">
-			</div>
-		</div>
-		<div id="legend">
-				<label>Relative Temperature Scale</label>
-				<input type="checkbox" id="temperature">
-			<div class="legend">
-  				<div class="blue">&nbsp;</div>
-  				<div class="legend_text" id="blue_value">Blue</div>
-    			<div class="red">&nbsp;</div>
-  				<div class="legend_text" id="red_value">Red</div>
-			</div>
-		</div>
+        <!-- jQuery UI -->
+        <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
 
-		<!-- Misc assets -->
-	   	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
-		<script src="https://cdn.rawgit.com/alertifyjs/alertify.js/v1.0.10/dist/js/alertify.js"></script>
-		<script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+        <!-- Alertify css -->
+        <link rel="stylesheet" href="//cdn.jsdelivr.net/alertifyjs/1.9.0/css/alertify.min.css"/>
+        <link rel="stylesheet" href="//cdn.jsdelivr.net/alertifyjs/1.9.0/css/themes/default.min.css"/>
+    </head>
+    <body>
+        <div id='loading_div'><h2>Loading scene, please wait...</h2></div>
+        <div id='time'></div>
+        <div id='player'>
+            <div id='time_slider'></div>
+            <div id='playback_options'>
+                <button id='forward' type='button'>Forward</button>
+                <button id='backward' type='button'>Backward</button>
+                <button id='reset' type='button'>Reset</button>
+                <button id='animate' type='button'>Start Playback</button>
+                <label>Playback Speed</label>
+                <input class='number_input' type="number" id="speed" value="10" min="0" max="100">
+                <label>Reverse Vectors</label>
+                <input type="checkbox" id="tofrom">
+                <label>Show Contours</label>
+                <input type="checkbox" id="contours">
+            </div>
+        </div>
+        <div id="legend">
+                <label>Relative Temperature Scale</label>
+                <input type="checkbox" id="temperature">
+            <div class="legend">
+                  <div class="blue">&nbsp;</div>
+                  <div class="legend_text" id="blue_value">Blue</div>
+                <div class="red">&nbsp;</div>
+                  <div class="legend_text" id="red_value">Red</div>
+            </div>
+        </div>
+        <div id="map"></div>
 
-		<!-- Terrain shaders -->
-		<script type="x-shader/x-vertex" id="vertexShader">
-			varying vec2 vUV;
-			varying float elevation;
-			void main() {
-				vUV = uv;
-				gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-				elevation = position.y;
-			}
-		</script>
-		<script type="x-shader/x-fragment" id="fragmentShader">
-			uniform sampler2D t_data;
-			varying vec2 vUV;
-			varying float elevation;
-			uniform bool show_contours;
-			void main() {
-				vec4 texColor = texture2D(t_data, vUV);
-				if (show_contours && floor(mod(elevation,5.)) == 0.) {
-                	texColor = vec4(0.1);
-            	}
-            	gl_FragColor = texColor;
-			}
-		</script>
+        <!-- Misc assets -->
+           <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+        <script src="https://cdn.rawgit.com/alertifyjs/alertify.js/v1.0.10/dist/js/alertify.js"></script>
+        <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
 
-	 	<!-- Three.js assets -->
-		<script src="js/three.js"></script>
-		<script src="js/MapControls.js"></script>
+        <!-- Terrain shaders -->
+        <script type="x-shader/x-vertex" id="vertexShader">
+            varying vec2 vUV;
+            varying float elevation;
+            void main() {
+                vUV = uv;
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                elevation = position.y;
+            }
+        </script>
+        <script type="x-shader/x-fragment" id="fragmentShader">
+            uniform sampler2D t_data;
+            varying vec2 vUV;
+            varying float elevation;
+            uniform bool show_contours;
+            void main() {
+                vec4 texColor = texture2D(t_data, vUV);
+                if (show_contours && floor(mod(elevation,5.)) == 0.) {
+                    texColor = vec4(0.1);
+                }
+                gl_FragColor = texColor;
+            }
+        </script>
 
-		<!-- Main app assets  -->
-		<script src="js/utils.js"></script>
-		<script src="js/main.js"></script>
-	</body>
+         <!-- Three.js assets -->
+        <script src="js/three.js"></script>
+        <script src="js/MapControls.js"></script>
+
+        <!-- Main app assets  -->
+        <script src="js/utils.js"></script>
+        <script src="js/map.js"></script>
+        <script src="js/main.js"></script>
+    </body>
 </html>
