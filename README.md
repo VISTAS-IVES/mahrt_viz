@@ -26,4 +26,3 @@ Then navigate to `127.0.0.1:5000` in your browser to view the visualization.
 
 # Current Feature Requests
 * Add a scale to indicate relative size of landscape.
-* Add a minimap to indicate geographical location of study area.
